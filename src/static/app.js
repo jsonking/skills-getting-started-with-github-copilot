@@ -97,7 +97,10 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.className = "success";
         signupForm.reset();
         // Refresh activities to show updated participants
-        fetchActivities();
+        // Use a small delay to ensure server has fully processed the signup
+        setTimeout(() => {
+          fetchActivities();
+        }, 100);
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
