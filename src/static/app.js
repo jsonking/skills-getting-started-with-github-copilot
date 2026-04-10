@@ -4,6 +4,33 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  // Add event listener for delete buttons (event delegation)
+  activitiesList.addEventListener('click', async (event) => {
+    if (event.target.classList.contains('delete-btn')) {
+      const email = event.target.dataset.email;
+      const activity = event.target.dataset.activity;
+
+      try {
+        const response = await fetch(
+          `/activities/${encodeURIComponent(activity)}/remove?email=${encodeURIComponent(email)}`,
+          {
+            method: 'POST',
+          }
+        );
+
+        if (response.ok) {
+          fetchActivities(); // Refresh activities
+        } else {
+          const result = await response.json();
+          alert(result.detail || 'Error removing participant');
+        }
+      } catch (error) {
+        alert('Failed to remove participant');
+        console.error(error);
+      }
+    }
+  });
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
@@ -12,6 +39,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       // Clear loading message
       activitiesList.innerHTML = "";
+
+      // Clear select options
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -25,6 +55,10 @@ document.addEventListener("DOMContentLoaded", () => {
           <p>${details.description}</p>
           <p><strong>Schedule:</strong> ${details.schedule}</p>
           <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <p><strong>Current Participants:</strong></p>
+          <ul>
+            ${details.participants.length > 0 ? details.participants.map(p => `<li>${p} <button class="delete-btn" data-email="${p}" data-activity="${name}">×</button></li>`).join('') : '<li>No participants yet.</li>'}
+          </ul>
         `;
 
         activitiesList.appendChild(activityCard);
@@ -62,6 +96,11 @@ document.addEventListener("DOMContentLoaded", () => {
         messageDiv.textContent = result.message;
         messageDiv.className = "success";
         signupForm.reset();
+        // Refresh activities to show updated participants
+        // Use a small delay to ensure server has fully processed the signup
+        setTimeout(() => {
+          fetchActivities();
+        }, 100);
       } else {
         messageDiv.textContent = result.detail || "An error occurred";
         messageDiv.className = "error";
